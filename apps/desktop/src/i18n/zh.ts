@@ -3195,6 +3195,7 @@ export const zh: Translations = {
     connecting: '连接中',
     update: '更新',
     flowSubtitles: {
+      codex_app_server: '使用官方 Codex CLI 登录状态和模型列表，无需 API 密钥',
       pkce: '打开浏览器登录，然后回到这里继续',
       device_code: '在浏览器中打开验证页面 — Hermes 会自动连接',
       external: '先在终端登录一次，然后回来继续对话'

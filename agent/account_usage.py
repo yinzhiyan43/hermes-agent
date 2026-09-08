@@ -369,6 +369,18 @@ def _plural(count: int) -> str:
 def _fetch_codex_account_usage(
     base_url: Optional[str] = None, api_key: Optional[str] = None,
 ) -> Optional[AccountUsageSnapshot]:
+    from hermes_cli.codex_app_server_bridge import is_enabled, request, rate_windows
+    if is_enabled():
+        payload = request("account/rateLimits/read", {})
+        windows = tuple(AccountUsageWindow(
+            label=label, used_percent=window.get("usedPercent"),
+            reset_at=_parse_dt(window.get("resetsAt")),
+            detail=(f"{window['windowDurationMins']} min window" if window.get("windowDurationMins") is not None else None),
+        ) for label, window in rate_windows(payload))
+        banked = (payload.get("rateLimitResetCredits") or {}).get("availableCount")
+        details = (f"Banked resets: {banked}",) if banked is not None else ()
+        return AccountUsageSnapshot(provider="openai-codex", source="codex-app-server",
+            fetched_at=_utc_now(), windows=windows, details=details)
     token, resolved_base_url, account_id = _resolve_codex_usage_credentials(base_url, api_key)
     payload = _get_json(_codex_backend_urls(resolved_base_url)[0], _codex_headers(token, account_id), timeout=15.0)
     windows = _usage_windows(payload.get("rate_limit") or {}, (("primary_window", "Session"), ("secondary_window", "Weekly")),
@@ -463,6 +475,9 @@ def redeem_codex_reset_credit(
     guard (a reset restores the WHOLE 5h + weekly allowance, and the backend's own ``nothing_to_reset`` guard is
     less clear) → POST consume with a fresh UUID ``redeem_request_id`` and no ``credit_id`` (the backend picks the
     next credit). Never raises: every failure returns a result."""
+    from hermes_cli.codex_app_server_bridge import is_enabled, redeem_reset
+    if is_enabled():
+        return redeem_reset(force=force)
     import uuid
     try:
         token, resolved_base_url, account_id = _resolve_codex_usage_credentials(base_url, api_key)

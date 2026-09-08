@@ -826,7 +826,15 @@ def resolve_runtime_provider(*, requested: Optional[str] = None, explicit_api_ke
     target_model overrides model_cfg["default"] when computing provider-specific api_mode (e.g.
     OpenCode Zen/Go where different models route through different API surfaces)."""
     requested_provider = resolve_requested_provider(requested)
+    model_cfg = _get_model_config()
+    if requested_provider == "auto" and model_cfg.get("provider") == "openai-codex":
+        requested_provider = "openai-codex"
     _raise_if_provider_disabled(requested_provider)
+    if requested_provider == "openai-codex" or (requested_provider == "openai" and model_cfg.get("openai_runtime") == "codex_app_server"):
+        if explicit_api_key not in (None, "", "codex-app-server-managed") or (explicit_base_url and explicit_base_url.rstrip("/") != DEFAULT_CODEX_BASE_URL.rstrip("/")):
+            raise ValueError("Codex App Server owns authentication and its endpoint; explicit credentials/endpoints are disabled.")
+        return _runtime("openai-codex", "codex_app_server", DEFAULT_CODEX_BASE_URL,
+                        "codex-app-server-managed", source="codex-app-server", requested_provider=requested_provider)
     return next(r for r in _ladder_rungs(requested_provider, explicit_api_key, explicit_base_url, target_model) if r)
 
 

@@ -340,6 +340,9 @@ def _model_flow_nous(config, current_model="", args=None):
 
 def _model_flow_openai_codex(config, current_model=""):
     """OpenAI Codex provider: ensure logged in, then pick model."""
+    from hermes_cli.codex_app_server_bridge import is_enabled, select_model
+    if is_enabled(config):
+        return select_model(current_model)
     from hermes_cli.auth import (
         get_codex_auth_status, _prompt_model_selection, _login_openai_codex, PROVIDER_REGISTRY, DEFAULT_CODEX_BASE_URL,
     )

@@ -2576,6 +2576,7 @@ export const zhHant = defineLocale({
     connecting: '連線中',
     update: '更新',
     flowSubtitles: {
+      codex_app_server: '使用官方 Codex CLI 登入狀態和模型清單，無需 API 金鑰',
       pkce: '開啟瀏覽器登入，然後回到這裡繼續',
       device_code: '在瀏覽器中開啟驗證頁面 — Hermes 會自動連線',
       external: '先在終端機登入一次，然後回來繼續聊天'

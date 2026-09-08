@@ -288,6 +288,10 @@ async function fetchProviderDefaultModel(
   const matched =
     providers.find((p: ModelOptionProvider) => lower.includes(String(p.slug).toLowerCase())) ?? providers[0]
 
+  if (lower.includes('openai-codex') && matched.slug !== 'openai-codex') {
+    return null
+  }
+
   const models = matched.models ?? []
 
   if (models.length === 0) {
@@ -686,6 +690,9 @@ export async function startProviderOAuth(provider: OAuthProvider, ctx: Onboardin
 
   if (provider.flow === 'external') {
     setFlow({ status: 'external_pending', provider, copied: false })
+    if (provider.id === 'openai-codex' && provider.status?.logged_in) {
+      await recheckExternalSignin(ctx)
+    }
 
     return
   }

@@ -343,6 +343,8 @@ def determine_api_mode(provider: str, base_url: str = "", model: str = "") -> st
     """API mode (wire protocol) for a provider/endpoint: host-mandated mode, then Nous dual-wire
     (model-derived — the overlay alone says openai_chat and would pin Claude on the wrong wire),
     then the known provider's transport, then bedrock, else ``chat_completions``."""
+    if (provider or "").strip().lower() in {"openai-codex", "codex"}:
+        return "codex_app_server"
     mandated = host_mandated_api_mode(base_url)
     if mandated is not None:
         return mandated

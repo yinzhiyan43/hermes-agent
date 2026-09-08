@@ -3045,6 +3045,7 @@ export const en: Translations = {
     connecting: 'Connecting',
     update: 'Update',
     flowSubtitles: {
+      codex_app_server: 'Uses the official Codex CLI sign-in and model list; no API key required',
       pkce: 'Opens your browser to sign in, then continues here',
       device_code: 'Opens a verification page in your browser — Hermes connects automatically',
       external: 'Sign in once in your terminal, then come back to chat'

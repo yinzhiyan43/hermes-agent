@@ -137,8 +137,8 @@ _OAUTH_PROVIDER_CATALOG: tuple[Dict[str, Any], ...] = (
     # status_fn None → dispatched via auth.get_<provider>_auth_status.
     {"id": "nous", "name": "Nous Portal", "flow": "device_code", "cli_command": "hermes auth add nous",
      "docs_url": "https://portal.nousresearch.com", "status_fn": None},
-    {"id": "openai-codex", "name": "ChatGPT or Codex Subscription", "flow": "device_code",
-     "cli_command": "hermes auth add openai-codex", "docs_url": "https://platform.openai.com/docs",
+    {"id": "openai-codex", "name": "Codex App Server", "flow": "external",
+     "cli_command": "codex login", "docs_url": "https://developers.openai.com/codex/app-server",
      "status_fn": None},
     {"id": "qwen-oauth", "name": "Qwen (via Qwen CLI)", "flow": "external",
      "cli_command": "hermes auth add qwen-oauth", "docs_url": "https://github.com/QwenLM/qwen-code",

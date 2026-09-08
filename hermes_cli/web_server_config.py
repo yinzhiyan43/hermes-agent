@@ -648,6 +648,16 @@ def _apply_main_assignment_sync(cfg: dict, provider: str, model: str, base_url: 
         base_url = str(provider_entry.get("base_url") or "").strip()
     model_cfg = _apply_main_model_assignment(cfg.get("model", {}), provider, model, base_url, api_key)
     _resolve_assignment_credentials(model_cfg, provider, provider_entry)
+    if provider.strip().lower() == "openai-codex":
+        from hermes_cli.codex_app_server_bridge import auth_status, list_models
+        if not auth_status().get("logged_in"):
+            raise HTTPException(400, "Sign in with `codex login` before selecting Codex App Server.")
+        if model not in list_models():
+            raise HTTPException(400, "Choose a model returned by Codex App Server.")
+        model_cfg["openai_runtime"] = "codex_app_server"
+        for key in ("base_url", "api_key", "key_env", "api_mode"):
+            model_cfg.pop(key, None)
+        cfg.setdefault("auxiliary", {}).setdefault("background_review", {})["enabled"] = False
     cfg["model"] = model_cfg
 
     new_provider = provider.strip().lower()

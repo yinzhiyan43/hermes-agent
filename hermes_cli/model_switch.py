@@ -1334,7 +1334,7 @@ def _resolve_switch_credentials(st: _Switch) -> Optional[ModelSwitchResult]:
     # session state when the host mandates one wire protocol (e.g. gpt-5.x on api.openai.com
     # would otherwise 400 on tools+reasoning).
     mandated_mode = host_mandated_api_mode(st.base_url)
-    if mandated_mode is not None:
+    if mandated_mode is not None and st.api_mode != "codex_app_server":
         st.api_mode = mandated_mode
     st.api_mode = st.api_mode or determine_api_mode(st.target_provider, st.base_url)
     return None

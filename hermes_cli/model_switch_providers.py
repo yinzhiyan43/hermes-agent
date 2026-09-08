@@ -726,6 +726,9 @@ def _lap_builtin_rows(b: _PickerBuild, data: dict, user_providers: dict) -> None
 def _overlay_has_creds(b: _PickerBuild, pid: str, hermes_slug: str, overlay) -> bool:
     """Section-2 credential ladder: env/SDK, external-process executable, auth store, pool,
     anthropic's external credential files."""
+    from hermes_cli.codex_app_server_bridge import is_enabled, auth_status
+    if hermes_slug == "openai-codex":
+        return bool(auth_status().get("logged_in"))
     if overlay.keyless:
         return True  # served anonymously (opencode-free)
     if overlay.auth_type == "aws_sdk":

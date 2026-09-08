@@ -1,3 +1,5 @@
+> **Personal Codex App Server distribution:** maintained by [yinzhiyan43](https://github.com/yinzhiyan43/hermes-agent). [Installation, releases and updates](docs/codex-distribution.md). Use this fork’s installer to retain its changes. Original project and contributor credits follow below.
+
 <p align="center">
   <img src="assets/banner.png" alt="Hermes Agent" width="100%">
 </p>

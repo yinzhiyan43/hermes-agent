@@ -149,6 +149,9 @@ def _ranked_slugs(entries: object) -> List[str]:
 
 def _fetch_models_from_api(access_token: str) -> List[str]:
     """Fetch available models from the Codex API. Returns visible models sorted by priority."""
+    from hermes_cli.codex_app_server_bridge import is_enabled, list_models
+    if is_enabled():
+        return list_models()
     try:
         import httpx
         headers = {"Authorization": f"Bearer {access_token}"}
@@ -198,6 +201,9 @@ def _read_cache_models(codex_home: Path) -> List[str]:
 
 def get_codex_model_ids(access_token: Optional[str] = None) -> List[str]:
     """Available Codex model IDs: live API (if token) > config.toml default > local cache > defaults."""
+    from hermes_cli.codex_app_server_bridge import is_enabled, list_models
+    if is_enabled():
+        return list_models()
     codex_home = Path(os.getenv("CODEX_HOME", "").strip() or str(Path.home() / ".codex")).expanduser()
     if access_token:
         api_models = _fetch_models_from_api(access_token)

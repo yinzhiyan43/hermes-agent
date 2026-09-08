@@ -1,0 +1,75 @@
+name: Codex distribution
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codex-distribution-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    if: github.repository == 'yinzhiyan43/hermes-agent'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 26
+          cache: npm
+      - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+      - run: uv sync --locked --python 3.11 --extra dev
+      - name: Codex routing, authentication and session regression tests
+        run: scripts/run_tests.sh tests/agent/transports/test_codex_official_boundary.py tests/agent/transports/test_codex_session_binding.py tests/hermes_cli/test_codex_app_server_settings.py tests/hermes_cli/test_codex_distribution_update.py
+      - run: npm ci --ignore-scripts
+      - name: Desktop provider and update regression tests
+        working-directory: apps/desktop
+        run: npx vitest run src/components/onboarding/index.test.tsx src/store/onboarding.test.ts electron/update-remote.test.ts
+      - run: bash -n scripts/install.sh
+
+  package:
+    needs: verify
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    runs-on: macos-14
+    timeout-minutes: 60
+    permissions:
+      contents: write
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      HERMES_BUILD_PIN_BRANCH: main
+      HERMES_BUILD_PIN_COMMIT: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 26
+          cache: npm
+      - run: npm ci
+      - name: Build desktop for Apple Silicon
+        working-directory: apps/desktop
+        run: |
+          npm run build
+          npm run builder -- --mac zip --arm64 --publish never
+      - name: Build setup application for Apple Silicon
+        working-directory: apps/bootstrap-installer
+        run: |
+          rustup target add aarch64-apple-darwin
+          npm run tauri:build -- --target aarch64-apple-darwin --bundles dmg
+      - name: Prepare release and provenance
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p release-assets
+          cp apps/desktop/release/*.zip release-assets/
+          cp apps/bootstrap-installer/src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg release-assets/Hermes-Codex-Setup-macos-arm64.dmg
+          cp apps/desktop/build/install-stamp.json release-assets/
+          cp docs/codex-distribution.md release-assets/
+          (cd release-assets && shasum -a 256 * > SHA256SUMS)
+          tag="codex-${GITHUB_RUN_NUMBER}-${GITHUB_SHA:0:8}"
+          gh release create "$tag" release-assets/* --target "$GITHUB_SHA" --draft --title "Hermes Codex App Server $tag" --notes-file docs/codex-release-notes.md

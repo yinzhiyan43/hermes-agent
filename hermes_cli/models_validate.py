@@ -556,6 +556,15 @@ def validate_requested_model(
     """Validate a ``/model`` value for the active provider → dict with ``accepted`` (switch now),
     ``persist`` (safe to save to config), ``recognized`` (matched a known provider catalog),
     ``message`` (optional warning / guidance) and ``corrected_model`` when a typo was fixed."""
+    from hermes_cli.codex_app_server_bridge import is_enabled, list_models
+    if (provider or "").strip().lower() in {"openai-codex", "codex"} and is_enabled():
+        model = (model_name or "").strip()
+        if model.startswith("openai-codex/"):
+            model = model.split("/", 1)[1]
+        accepted = model in list_models()
+        return {"accepted": accepted, "persist": accepted, "recognized": accepted,
+                "corrected_model": model,
+                "message": "" if accepted else "Choose a model from the official Codex App Server catalog."}
     from hermes_cli import models as _m
 
     requested = (model_name or "").strip()

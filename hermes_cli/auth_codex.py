@@ -83,6 +83,10 @@ def _load_auth_store_maybe_locked(lock: bool) -> Dict[str, Any]:
 
 def _read_codex_tokens(*, _lock: bool = True) -> Dict[str, Any]:
     """Read Codex OAuth tokens from Hermes auth store (~/.hermes/auth.json)."""
+    from hermes_cli.codex_app_server_bridge import is_enabled
+    if is_enabled():
+        raise AuthError("Codex App Server manages authentication. Use `codex login`; Hermes token access is disabled.",
+                        provider="openai-codex", code="codex_app_server_managed_auth", relogin_required=False)
     from hermes_cli.auth import _load_provider_state, _nonempty_str
     auth_store = _load_auth_store_maybe_locked(_lock)
     state = _load_provider_state(auth_store, "openai-codex")
@@ -233,6 +237,10 @@ def _codex_http_client(**kwargs: Any) -> "httpx.Client":
     token refresh / device login / usage probes time out where the official Codex CLI (which races families
     per RFC 8305) works.
     """
+    from hermes_cli.codex_app_server_bridge import is_enabled
+    if is_enabled():
+        raise AuthError("Codex App Server manages authentication. Use `codex login`; Hermes token access is disabled.",
+                        provider="openai-codex", code="codex_app_server_managed_auth", relogin_required=False)
     client = httpx.Client(**kwargs)
     with suppress(Exception):
         from agent.process_bootstrap import enable_happy_eyeballs_on_client
@@ -292,6 +300,10 @@ def _codex_refresh_failure_error(response: "httpx.Response") -> AuthError:
 def refresh_codex_oauth_pure(
     access_token: str, refresh_token: str, *, timeout_seconds: float = 20.0) -> Dict[str, Any]:
     """Refresh Codex OAuth tokens without mutating Hermes auth state."""
+    from hermes_cli.codex_app_server_bridge import is_enabled
+    if is_enabled():
+        raise AuthError("Codex App Server manages authentication. Use `codex login`; Hermes token access is disabled.",
+                        provider="openai-codex", code="codex_app_server_managed_auth", relogin_required=False)
     from hermes_cli.auth import _nonempty_str, _utc_now_z
     del access_token  # Access token is only used by callers to decide whether to refresh.
     if not _nonempty_str(refresh_token):
@@ -356,6 +368,10 @@ def _refresh_codex_auth_tokens(tokens: Dict[str, str], timeout_seconds: float) -
 
 def _import_codex_cli_tokens() -> Optional[Dict[str, str]]:
     """Read ~/.codex/auth.json (Codex CLI file) tokens if valid and not expired; never writes."""
+    from hermes_cli.codex_app_server_bridge import is_enabled
+    if is_enabled():
+        raise AuthError("Codex App Server manages authentication. Use `codex login`; Hermes token access is disabled.",
+                        provider="openai-codex", code="codex_app_server_managed_auth", relogin_required=False)
     from hermes_cli.auth import _codex_access_token_is_expiring
     codex_home = os.getenv("CODEX_HOME", "").strip() or str(Path.home() / ".codex")
     auth_path = Path(codex_home).expanduser() / "auth.json"
@@ -390,6 +406,10 @@ def resolve_codex_runtime_credentials(
     backup — gets a bare HTTP 401 ``Missing Authentication header`` from the wire instead of a usable
     credential. See issue #32992.
     """
+    from hermes_cli.codex_app_server_bridge import is_enabled
+    if is_enabled():
+        raise AuthError("Codex App Server manages authentication. Use `codex login`; Hermes token access is disabled.",
+                        provider="openai-codex", code="codex_app_server_managed_auth", relogin_required=False)
     from hermes_cli.auth import (
         _auth_store_lock, _codex_access_token_is_expiring, _probe_codex_quota_restored,
         _read_codex_tokens)
@@ -495,6 +515,10 @@ def _probe_codex_quota_restored(
     Probes are throttled per access token (module-local cache) so the hot selection path can fire
     this freely.
     """
+    from hermes_cli.codex_app_server_bridge import is_enabled
+    if is_enabled():
+        raise AuthError("Codex App Server manages authentication. Use `codex login`; Hermes token access is disabled.",
+                        provider="openai-codex", code="codex_app_server_managed_auth", relogin_required=False)
     from hermes_cli.auth import _codex_quota_probe_cache, _nonempty_str
     token = _stripped(access_token)
     # Real Codex access tokens are JWTs. Refusing to probe non-JWT tokens avoids pointless
@@ -619,6 +643,10 @@ def _pool_codex_access_token() -> str:
 
     Fallback for ``resolve_codex_runtime_credentials`` when the singleton has no creds.
     """
+    from hermes_cli.codex_app_server_bridge import is_enabled
+    if is_enabled():
+        raise AuthError("Codex App Server manages authentication. Use `codex login`; Hermes token access is disabled.",
+                        provider="openai-codex", code="codex_app_server_managed_auth", relogin_required=False)
     from hermes_cli.auth import _nonempty_str
     try:
         for entry in _codex_pool_dicts(_read_codex_pool_entries()):
@@ -633,6 +661,10 @@ def _pool_codex_access_token() -> str:
 
 def _login_openai_codex(args, pconfig: ProviderConfig, *, force_new_login: bool = False) -> None:
     """OpenAI Codex login via device code flow. Tokens stored in ~/.hermes/auth.json."""
+    from hermes_cli.codex_app_server_bridge import is_enabled
+    if is_enabled():
+        raise AuthError("Codex App Server manages authentication. Use `codex login`; Hermes token access is disabled.",
+                        provider="openai-codex", code="codex_app_server_managed_auth", relogin_required=False)
     from hermes_cli.auth import (
         _codex_access_token_is_expiring, _codex_device_code_login, _import_codex_cli_tokens,
         _offer_existing_oauth_credentials, _print_login_success, _prompt_yes_no, _save_codex_tokens,
@@ -779,6 +811,10 @@ def _codex_exchange_authorization_code(
 
 def _codex_device_code_login() -> Dict[str, Any]:
     """Run the OpenAI device code login flow and return credentials dict."""
+    from hermes_cli.codex_app_server_bridge import is_enabled
+    if is_enabled():
+        raise AuthError("Codex App Server manages authentication. Use `codex login`; Hermes token access is disabled.",
+                        provider="openai-codex", code="codex_app_server_managed_auth", relogin_required=False)
     from hermes_cli.auth import _utc_now_z
     issuer, client_id = "https://auth.openai.com", CODEX_OAUTH_CLIENT_ID
     device_data = _codex_request_device_code(issuer, client_id)

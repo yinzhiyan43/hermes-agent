@@ -2675,6 +2675,7 @@ export const ja = defineLocale({
     connecting: '接続中',
     update: '更新',
     flowSubtitles: {
+      codex_app_server: '公式 Codex CLI のログインとモデル一覧を使用。API キーは不要です',
       pkce: 'ブラウザーを開いてサインインし、ここに戻ります',
       device_code: 'ブラウザーで確認ページを開きます — Hermes が自動接続します',
       external: 'ターミナルで一度サインインして、チャットに戻ります'

@@ -1099,6 +1099,9 @@ def _openai_discovery_base_url(provider: str) -> str:
 
 
 def _codex_catalog(normalized: str, force_refresh: bool) -> list[str]:
+    from hermes_cli.codex_app_server_bridge import is_enabled, list_models
+    if is_enabled():
+        return list_models()
     from hermes_cli.codex_models import get_codex_model_ids
 
     # Live OAuth token so the picker matches what ChatGPT lists for this account; hardcoded
@@ -1525,6 +1528,9 @@ def cached_provider_model_ids(
     ttl_seconds: int = _PROVIDER_MODELS_CACHE_TTL) -> list[str]:
     """Disk-cached :func:`provider_model_ids`: fresh cache hit, else live fetch persisting a non-empty
     result. Always returns a list."""
+    from hermes_cli.codex_app_server_bridge import is_enabled, list_models
+    if normalize_provider(provider) == "openai-codex":
+        return list_models()
     normalized = _normalized_cache_slug(provider)
     if not normalized:
         return []

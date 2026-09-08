@@ -1980,6 +1980,9 @@ def _resolve_xai_oauth_for_aux() -> Optional[Tuple[str, str]]:
 
 def _read_codex_access_token() -> Optional[str]:
     """Valid, non-expired Codex OAuth access token; an exhausted pool falls back to the profile's auth.json token."""
+    from hermes_cli.codex_app_server_bridge import is_enabled
+    if is_enabled():
+        return None
     pool_present, entry = _select_pool_entry("openai-codex")
     if pool_present:
         token = _pool_runtime_api_key(entry)
@@ -2726,6 +2729,9 @@ def _build_codex_client(model: str) -> Tuple[Optional[Any], Optional[str]]:
 
     No auto-selected default: the Codex model allow-list is undocumented and drifts.
     """
+    from hermes_cli.codex_app_server_bridge import is_enabled
+    if is_enabled():
+        return None, None
     if not model:
         logger.warning(
             "Auxiliary client: openai-codex requested without a model; "
@@ -4841,6 +4847,10 @@ def resolve_provider_client(
     (full auto-detection chain). ``model=None`` → provider's default aux model. ``raw_codex`` → bare OpenAI
     client for ``responses.stream()`` callers. ``api_mode`` forces "codex_responses"/"chat_completions"/
     "anthropic_messages" instead of auto-detect. Returns (client, resolved_model) or (None, None)."""
+    from hermes_cli.codex_app_server_bridge import is_enabled
+    from urllib.parse import urlparse
+    if is_enabled() and ((provider or "").strip().lower() in {"openai-codex", "codex"} or urlparse(str(explicit_base_url or "")).hostname == "chatgpt.com"):
+        raise ValueError("Codex App Server requires its session runtime; configure a separate auxiliary provider.")
     _validate_proxy_env_urls()
     # Keep the pre-alias name so a custom_providers entry named like a built-in alias
     # (e.g. "kimi" → "kimi-coding") is still reachable via the named-custom branch.

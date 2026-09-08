@@ -1544,6 +1544,9 @@ def _fetch_codex_oauth_context_lengths_with_source(access_token: str) -> Tuple[D
     """Codex catalogue ``{slug: context_window}`` plus whether it came from HTTP. Cached per token
     fingerprint (windows vary by entitlement). An in-process hit reports False: not a fresh
     provider confirmation, must not drive persistent writes."""
+    from hermes_cli.codex_app_server_bridge import is_enabled
+    if is_enabled():
+        return {}, False
     now = time.time()
     cache_key = _codex_oauth_token_fingerprint(access_token)
     cached = _codex_oauth_context_cache.get(cache_key)

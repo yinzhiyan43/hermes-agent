@@ -2295,6 +2295,7 @@ export const ar = defineLocale({
     connecting: 'جار الاتصال',
     update: 'تحديث',
     flowSubtitles: {
+      codex_app_server: 'يستخدم تسجيل الدخول وقائمة النماذج من Codex CLI الرسمي، دون مفتاح API',
       pkce: 'يفتح المتصفح لتسجيل الدخول ثم يتابع هنا',
       device_code: 'يفتح صفحة تحقق في المتصفح — يتصل Hermes تلقائياً',
       loopback: 'يفتح المتصفح لتسجيل الدخول — يتصل Hermes تلقائياً',

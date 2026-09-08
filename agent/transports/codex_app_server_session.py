@@ -11,6 +11,10 @@ from __future__ import annotations
 
 import contextlib
 import logging
+import hashlib
+import json
+from pathlib import Path
+import tempfile
 import os
 import threading
 import time
@@ -155,10 +159,18 @@ class CodexAppServerSession:
         on_event: Optional[Callable[[dict], None]] = None,
         request_routing: Optional[_ServerRequestRouting] = None,
         client_factory: Optional[Callable[..., CodexAppServerClient]] = None,
+        hermes_session_id: Optional[str] = None,
+        model: Optional[str] = None,
     ) -> None:
         self._cwd = cwd or os.getcwd()
         self._codex_bin = codex_bin
         self._codex_home = codex_home
+        self._model = model
+        self._binding_path = None
+        if hermes_session_id:
+            from hermes_constants import get_hermes_home
+            binding_key = hashlib.sha256(hermes_session_id.encode()).hexdigest()
+            self._binding_path = get_hermes_home() / "codex-sessions" / f"{binding_key}.json"
         self._permission_profile = permission_profile or _HERMES_TO_CODEX_PERMISSION_PROFILE.get(
             os.environ.get("HERMES_TERMINAL_SECURITY_MODE", "auto"), "workspace-write"
         )
@@ -186,7 +198,18 @@ class CodexAppServerSession:
         self._client.initialize(client_name="hermes", client_title="Hermes Agent", client_version=_get_hermes_version())
         # Permissions are NOT sent on thread/start: codex gates ``thread/start.permissions``
         # behind experimentalApi + a matching ``[permissions]`` table in ~/.codex/config.toml.
-        result = self._client.request("thread/start", {"cwd": self._cwd}, timeout=15)
+        params = {"cwd": self._cwd}
+        if self._model:
+            params["model"] = self._model
+        method = "thread/start"
+        if self._binding_path is not None and self._binding_path.exists():
+            binding = json.loads(self._binding_path.read_text(encoding="utf-8"))
+            saved_id = binding.get("thread_id")
+            if not isinstance(saved_id, str) or not saved_id:
+                raise ValueError("Invalid saved Codex session binding; refusing to discard context")
+            params["threadId"] = saved_id
+            method = "thread/resume"
+        result = self._client.request(method, params, timeout=30)
         # Different codex versions serialize the id under thread.id / sessionId / threadId.
         thread_obj = result.get("thread") or {}
         thread_id = thread_obj.get("id") or thread_obj.get("sessionId") or result.get("sessionId") or result.get("threadId")
@@ -194,6 +217,16 @@ class CodexAppServerSession:
             raise CodexAppServerError(
                 code=-32603, message=f"codex thread/start returned no thread id (payload keys: {sorted(result.keys())})",
             )
+        if self._binding_path is not None:
+            self._binding_path.parent.mkdir(parents=True, exist_ok=True)
+            fd, temporary = tempfile.mkstemp(dir=self._binding_path.parent, prefix=".binding-")
+            try:
+                with os.fdopen(fd, "w", encoding="utf-8") as out:
+                    json.dump({"thread_id": thread_id, "cwd": self._cwd}, out)
+                os.replace(temporary, self._binding_path)
+            finally:
+                if os.path.exists(temporary):
+                    os.unlink(temporary)
         self._thread_id = thread_id
         logger.info("codex app-server thread started: id=%s profile=%s cwd=%s", thread_id[:8], self._permission_profile, self._cwd)
         return thread_id

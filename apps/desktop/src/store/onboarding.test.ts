@@ -80,6 +80,36 @@ function fallbackTimeoutGateway(): OnboardingContext['requestGateway'] {
 }
 
 describe('refreshOnboarding', () => {
+  it('connects an existing Codex CLI login without starting Hermes OAuth', async () => {
+    const { startProviderOAuth, closeManualOnboarding } = await import('./onboarding')
+    const requests: { path: string; profile?: string }[] = []
+    installApiMock(async request => {
+      requests.push(request)
+      if (request.path.startsWith('/api/model/options')) {
+        return { providers: [{ slug: 'openai-codex', name: 'Codex App Server', models: ['account-model'] }] }
+      }
+      if (request.path.startsWith('/api/model/recommended-default')) {
+        return { model: 'account-model' }
+      }
+      return { ok: true }
+    })
+    const provider = makeOAuthProvider('openai-codex', 'Codex App Server')
+    provider.flow = 'external'
+    provider.status = { logged_in: true }
+    try {
+      await startProviderOAuth(provider, {
+        profile: 'architect',
+        requestGateway: async () => ({ ok: true, provider: 'openai-codex' }) as never
+      })
+      expect(requests.some(r => r.path.endsWith('/start'))).toBe(false)
+      expect(requests.some(r => r.path === '/api/model/set')).toBe(true)
+      expect(requests.every(r => r.profile === 'architect')).toBe(true)
+      expect($desktopOnboarding.get().flow.status).toBe('confirming_model')
+    } finally {
+      closeManualOnboarding()
+    }
+  })
+
   it('keeps onboarding work in its initiating lifetime and profile', async () => {
     const { startManualOnboarding, startProviderOAuth, saveOnboardingApiKey, closeManualOnboarding } =
       await import('./onboarding')

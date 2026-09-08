@@ -1750,6 +1750,9 @@ def _codex_pool_rate_limited_status() -> Optional[Dict[str, Any]]:
 
 def get_codex_auth_status() -> Dict[str, Any]:
     """Status snapshot for Codex auth (pool first, then legacy provider state)."""
+    from hermes_cli.codex_app_server_bridge import is_enabled, auth_status
+    if is_enabled():
+        return auth_status()
     return _pool_first_oauth_status(
         "openai-codex", is_expiring=_codex_access_token_is_expiring, auth_mode="chatgpt",
         resolve=resolve_codex_runtime_credentials, on_pool_miss=_codex_pool_rate_limited_status)

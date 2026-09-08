@@ -190,7 +190,10 @@ def load_background_review_settings() -> tuple[bool, Dict[str, Any]]:
     try:
         from hermes_cli.config import load_config_readonly
         from utils import is_truthy_value
-        task = _task_block(load_config_readonly())
+        config = load_config_readonly()
+        if (config.get("model") or {}).get("provider") == "openai-codex":
+            return False, {}
+        task = _task_block(config)
         return is_truthy_value(task.get("enabled"), default=True), task
     except Exception:
         logger.warning(
@@ -206,6 +209,8 @@ def _resolve_review_runtime(agent: Any, task_cfg: Optional[Dict[str, Any]] = Non
     parent): the parent's live runtime with ``routed=False`` (codex_app_server -> codex_responses
     downgrade applied). When ``auxiliary.background_review.{provider,model}`` names a different
     concrete model, resolve that runtime and set ``routed=True``."""
+    if (agent._current_main_runtime().get("api_mode") == "codex_app_server"):
+        raise ValueError("Background review is disabled for the official Codex App Server runtime.")
     parent_runtime = agent._current_main_runtime()
     parent_api_mode = parent_runtime.get("api_mode") or None
     parent = {

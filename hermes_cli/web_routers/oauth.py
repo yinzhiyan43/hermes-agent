@@ -296,6 +296,10 @@ _PROVIDER_STATUS: Dict[str, tuple[str, Callable[[dict], dict]]] = {
 
 def _resolve_provider_status(provider_id: str, status_fn) -> Dict[str, Any]:
     """Dispatch to the right status helper for an OAuth provider entry."""
+    if provider_id == "openai-codex":
+        from hermes_cli.codex_app_server_bridge import auth_status
+        raw = auth_status()
+        return {**raw, "source_label": "Codex App Server", "token_preview": "", "has_refresh_token": False}
     try:
         if status_fn is not None:
             return status_fn()
@@ -422,7 +426,7 @@ async def _start_xai_device_code(profile: Optional[str]) -> Dict[str, Any]:
 
 
 _DEVICE_CODE_STARTERS = {
-    "nous": _start_nous_device_code, "openai-codex": _start_codex_device_code,
+    "nous": _start_nous_device_code,
     "minimax-oauth": _start_minimax_device_code, "xai-oauth": _start_xai_device_code,
 }
 
