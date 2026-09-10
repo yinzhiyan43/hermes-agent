@@ -85,17 +85,21 @@ describe('refreshOnboarding', () => {
     const requests: { path: string; profile?: string }[] = []
     installApiMock(async request => {
       requests.push(request)
+
       if (request.path.startsWith('/api/model/options')) {
         return { providers: [{ slug: 'openai-codex', name: 'Codex App Server', models: ['account-model'] }] }
       }
+
       if (request.path.startsWith('/api/model/recommended-default')) {
         return { model: 'account-model' }
       }
+
       return { ok: true }
     })
     const provider = makeOAuthProvider('openai-codex', 'Codex App Server')
     provider.flow = 'external'
     provider.status = { logged_in: true }
+
     try {
       await startProviderOAuth(provider, {
         profile: 'architect',

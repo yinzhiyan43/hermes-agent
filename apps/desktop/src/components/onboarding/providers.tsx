@@ -131,7 +131,9 @@ export function ProviderRow({
           </span>
           {loggedIn ? <ConnectedTag /> : null}
         </div>
-        <p className="mt-1 text-xs leading-5 text-muted-foreground">{t.onboarding.flowSubtitles[provider.id === 'openai-codex' ? 'codex_app_server' : provider.flow]}</p>
+        <p className="mt-1 text-xs leading-5 text-muted-foreground">
+          {t.onboarding.flowSubtitles[provider.id === 'openai-codex' ? 'codex_app_server' : provider.flow]}
+        </p>
       </div>
       <Trail className="size-4 text-muted-foreground transition group-hover:text-foreground" />
     </RowButton>

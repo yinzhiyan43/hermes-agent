@@ -703,6 +703,7 @@ export async function startProviderOAuth(provider: OAuthProvider, ctx: Onboardin
 
   if (provider.flow === 'external') {
     setFlow({ status: 'external_pending', provider, copied: false })
+
     if (provider.id === 'openai-codex' && provider.status?.logged_in) {
       await recheckExternalSignin(ctx)
     }
